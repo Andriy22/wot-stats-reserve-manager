@@ -1,29 +1,58 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import HomeView from "../views/HomeView.vue";
+import LoginView from "../views/LoginView.vue";
+import DashboardView from "@/views/DashboardView";
+import EditorView from "@/views/EditorView";
+import ConnectView from "@/views/ConnectView";
 
 Vue.use(VueRouter);
 
 const routes = [
   {
-    path: "/",
-    name: "home",
-    component: HomeView,
+    path: "/login",
+    name: "login",
+    component: LoginView,
   },
   {
-    path: "/about",
-    name: "about",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "about" */ "../views/AboutView.vue"),
+    path: "/dashboard",
+    name: "dashboard",
+    component: DashboardView,
   },
+  {
+    path: "/editor/:id",
+    name: "editor",
+    component: EditorView,
+  },
+  {
+    path: "/connect",
+    name: "connect",
+    component: ConnectView
+  },
+  {
+    path: "/",
+    redirect: "/dashboard",
+    name: "main"
+  }
 ];
 
 const router = new VueRouter({
   routes,
   mode: "history",
 });
+
+router.beforeEach((to, _1, next) => {
+  if (to.name.toLowerCase() === 'dashboard' || to.name.toLowerCase() === "editor" || to.name.toLowerCase() === "connect") {
+    if (localStorage.getItem("auth")) {
+      next();
+    } else {
+      next({
+        path: "/login",
+        replace: true
+      })
+    }
+  } else {
+    next();
+  }
+})
 
 export default router;
