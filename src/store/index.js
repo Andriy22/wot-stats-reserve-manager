@@ -4,6 +4,9 @@ import axios, { AxiosError } from "axios";
 import {API} from "@/config";
 import Router from "@/router/index"
 import router from "@/router/index";
+import {auth} from "@/store/auth.module";
+import {error} from "@/store/error.module";
+import api from "@/services/api";
 
 Vue.use(Vuex);
 
@@ -11,16 +14,6 @@ export default new Vuex.Store({
   state: {
     colors: {
       primary: "pink",
-    },
-    auth: {
-      user: {
-        access_token: "",
-        refresh_token: "",
-        user_id: "",
-        email: "",
-      },
-      isAuthorized: false,
-      isLoading: false,
     },
     connector: {
       icon: "mdi-close",
@@ -166,51 +159,14 @@ export default new Vuex.Store({
     }
   },
   actions: {
-    authorize(context, data) {
-      context.commit("START_AUTH_LOADING");
-
-      axios.post(`${API}/auth/authorize`, {email: data.email, password: data.password})
-          .then((response) => response.data)
-          .then((d) => {
-
-            d.isLS = false;
-
-            context.commit("AUTHORIZE", d)
-          }).catch((err) => {
-        if (axios.isAxiosError(err)) {
-          console.log(err);
-          // todo
-          // display message
-
-          context.commit("STOP_AUTH_LOADING");
-        } else {
-          console.log("123");
-
-          context.commit("STOP_AUTH_LOADING");
-        }
-      });
-    },
-
-    authorizeLS(context, data) {
-      data.isLS = true;
-
-      context.commit("AUTHORIZE", data)
-    },
-
-    logOut(context) {
-      context.commit("LOGOUT");
-    },
-
     connectWGAccount(context, data) {
       context.commit("CONNECT_WG_ACCOUNT",data);
-
-      setTimeout(() => {
-        axios.post(`${API}/reservemanager/connect-account`,
+      api.post(`${API}/reservemanager/connect-account`,
             {token: context.state.connector.response.access_token,
                   accountId: context.state.connector.response.account_id,
                   nickName: context.state.connector.response.nickname,
                   server: "CIS"
-                 }, {headers: {Authorization: `Bearer ${context.state.auth.user.access_token}`}})
+                 })
             .then((response) => response.data)
             .then((data) => {
               context.commit("CONNECT_WG_ACCOUNT_SUCCESS")
@@ -219,17 +175,15 @@ export default new Vuex.Store({
                 context.commit("CONNECT_WG_ACCOUNT_ERROR", err?.response?.data?.msg)
               }
         })
-      }, );
     },
 
     addReserveSchedule(context, data) {
-      setTimeout(() => {
-        axios.post(`${API}/reservemanager/add-schedule-item`,
+      api.post(`${API}/reservemanager/add-schedule-item`,
             {clanId: context.state.clanReserves.currentClanId,
                   day: context.state.clanReserves.currentDay,
                   reserveType: data.reserveType,
                   reserveLevel: data.reserveLevel,
-                  activateAt: data.activateAt}, {headers: {Authorization: `Bearer ${context.state.auth.user.access_token}`}})
+                  activateAt: data.activateAt})
             .then((response) => response.data)
             .then((data) => {
               context.dispatch("getClanSchedule", {clanId: context.state.clanReserves.currentClanId, day: context.state.clanReserves.currentDay});
@@ -238,12 +192,10 @@ export default new Vuex.Store({
             console.log(err);
           }
         })
-      }, 0);
     },
 
     getConnectedAccounts(context){
-      setTimeout(() =>{
-      axios.get(`${API}/reservemanager/get-my-accounts`, {headers: {Authorization: `Bearer ${context.state.auth.user.access_token}`}})
+      api.get(`${API}/reservemanager/get-my-accounts`, )
           .then((response) => response.data)
           .then((data) => {
              context.commit("SAVE_CONNECTED_ACCOUNTS", data);
@@ -254,12 +206,10 @@ export default new Vuex.Store({
           console.log("123");
         }
       })
-      }, 0)
     },
 
     getReserveLevels(context, data){
-      setTimeout(() =>{
-        axios.get(`${API}/reservemanager/get-reserve-levels/${data}`, {headers: {Authorization: `Bearer ${context.state.auth.user.access_token}`}})
+      api.get(`${API}/reservemanager/get-reserve-levels/${data.clanId}/${data.type}`)
             .then((response) => response.data)
             .then((data) => {
               context.commit("SAVE_RESERVE_LEVELS", data);
@@ -270,12 +220,10 @@ export default new Vuex.Store({
             console.log("123");
           }
         })
-      }, 0)
     },
 
     getClanTimezone(context, data){
-      setTimeout(() =>{
-        axios.get(`${API}/reservemanager/get-clan-timezone/${data}`, {headers: {Authorization: `Bearer ${context.state.auth.user.access_token}`}})
+      api.get(`${API}/reservemanager/get-clan-timezone/${data}`)
             .then((response) => response.data)
             .then((data) => {
               context.commit("SET_TIME_ZONE", data);
@@ -286,12 +234,10 @@ export default new Vuex.Store({
             console.log("123");
           }
         })
-      }, 0)
     },
 
     setClanTimezone(context, model){
-      setTimeout(() =>{
-        axios.get(`${API}/reservemanager/set-clan-timezone/${model.clanId}/${model.timezone}`, {headers: {Authorization: `Bearer ${context.state.auth.user.access_token}`}})
+      api.get(`${API}/reservemanager/set-clan-timezone/${model.clanId}/${model.timezone}`)
             .then((response) => response.data)
             .then((data) => {
               context.dispatch("getClanTimezone", model.clanId);
@@ -301,15 +247,13 @@ export default new Vuex.Store({
           } else {
             console.log("123");
           }
-        })
-      }, 0)
+        });
     },
 
     getClanSchedule(context, data){
       context.commit("SAVE_CLAN_SCHEDULE_LOADING", true);
       context.commit("SAVE_SCHEDULE_INFO", data);
-      setTimeout(() => {
-        axios.get(`${API}/reservemanager/get-clan-schedule/${context.state.clanReserves.currentClanId}/${context.state.clanReserves.currentDay}`, {headers: {Authorization: `Bearer ${context.state.auth.user.access_token}`}})
+      api.get(`${API}/reservemanager/get-clan-schedule/${context.state.clanReserves.currentClanId}/${context.state.clanReserves.currentDay}`)
             .then((response) => response.data)
             .then((data) => {
               context.commit("SAVE_CLAN_SCHEDULE", data);
@@ -322,12 +266,10 @@ export default new Vuex.Store({
             context.commit("SAVE_CLAN_SCHEDULE_LOADING", false);
           }
         });
-      }, 0);
     },
 
     removeClanReserveItem(context, data) {
-      setTimeout(() => {
-        axios.get(`${API}/reservemanager/remove-schedule-item/${data.clanId}/${data.id}`, {headers: {Authorization: `Bearer ${context.state.auth.user.access_token}`}})
+        api.get(`${API}/reservemanager/remove-schedule-item/${data.clanId}/${data.id}`)
             .then((response) => response.data)
             .then((data) => {
               context.dispatch("getClanSchedule", {clanId: context.state.clanReserves.currentClanId, day: context.state.clanReserves.currentDay});
@@ -338,8 +280,10 @@ export default new Vuex.Store({
             console.log(err);
           }
         });
-      }, 0);
     },
   },
-  modules: {},
+  modules: {
+    auth,
+    error,
+  },
 });

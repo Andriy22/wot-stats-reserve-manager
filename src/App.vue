@@ -37,7 +37,7 @@
       </template>
     </v-navigation-drawer>
     <v-app-bar app clipped-left dense>
-      <v-app-bar-nav-icon v-if="$store.state.auth.isAuthorized" @click="onNavIconClick"></v-app-bar-nav-icon>
+      <v-app-bar-nav-icon v-if="$store.state.auth.status.loggedIn" @click="onNavIconClick"></v-app-bar-nav-icon>
       <v-toolbar-title style="cursor: pointer"> <router-link class="text-decoration-none black--text" v-bind:class="{'white--text': $vuetify.theme.dark}" to="/dashboard">WoT-STATS Reserve Manager</router-link> </v-toolbar-title>
       <v-spacer></v-spacer>
       <v-icon
@@ -55,13 +55,32 @@
       <v-icon
           dense
           style="cursor: pointer"
-          @click="$store.dispatch('logOut')"
-          v-if="$store.state.auth.isAuthorized">mdi-exit-to-app</v-icon>
+          @click="$store.dispatch('auth/logout')"
+          v-if="$store.state.auth.status.loggedIn">mdi-exit-to-app</v-icon>
     </v-app-bar>
 
     <v-main>
       <router-view></router-view>
     </v-main>
+
+    <v-snackbar
+        v-model="$store.state.error.showError"
+        timeout="5000"
+    >
+      {{ $store.state.error.error }}
+
+      <template v-slot:action="{ attrs }">
+        <v-btn
+            color="red"
+            text
+            v-bind="attrs"
+
+            @click="$store.dispatch('error/displayError', {isHidden: true, text: ''})"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
   </v-app>
 </template>
 
@@ -76,15 +95,9 @@ export default {
   }),
   methods: {
     onNavIconClick() {
-      if (this.$store.state.auth.isAuthorized) {
+      if (this.$store.state.auth.status.loggedIn) {
         this.drawer = !this.drawer
       }
-    }
-  },
-  mounted() {
-    const auth = JSON.parse(localStorage.getItem("auth"));
-    if (auth) {
-      this.$store.dispatch("authorizeLS", auth);
     }
   },
 };

@@ -15,7 +15,7 @@
         <v-icon>mdi-cogs</v-icon>
       </v-btn>
 
-      <v-btn @click="dialog = true" icon>
+      <v-btn @click="dialog = true; editId = -1; isEdit = false;" icon>
         <v-icon color="pink">mdi-plus</v-icon>
       </v-btn>
 
@@ -104,7 +104,7 @@
                     small
                     class="mr-2"
                     color="orange"
-                    disabled
+                    @click="edit(item)"
                 >
                   mdi-pencil
                 </v-icon>
@@ -253,6 +253,10 @@ export default {
   data () {
     return {
       tabs: null,
+
+      isEdit: false,
+      editId: -1,
+
       dialog: false,
       settingsDialog: false,
       selectedType: 'BATTLE_PAYMENTS',
@@ -285,29 +289,46 @@ export default {
         this.selectedLevel = 1;
         this.selectedTime = 1;
         this.dialog = false;
+
+        if (this.isEdit) {
+          this.$store.dispatch("removeClanReserveItem", {clanId: this.$route.params.id, id: this.editId})
+
+          this.isEdit = false;
+          this.editId = -1;
+        }
      }
     },
     remove(item) {
       this.$store.dispatch("removeClanReserveItem", {clanId: this.$route.params.id, id: item.id})
     },
     onReserveTypeChanged(event) {
-      this.$store.dispatch("getReserveLevels", event);
+      this.$store.dispatch("getReserveLevels", {clanId: this.$route.params.id, type: event});
       this.selectedLevel = 1;
     },
     onTimeZoneChanged(event) {
       this.$store.dispatch("setClanTimezone", {clanId: this.$route.params.id, timezone: event});
+    },
+    edit(item) {
+      this.isEdit = true;
+      this.editId = item.id;
+
+      this.selectedLevel = parseInt(item.reserveLevel);
+      this.selectedType = item.reserveType;
+      this.selectedTime = parseInt(item.hour.split(":")[0]);
+
+      this.dialog = true;
     }
   },
   mounted() {
     this.$store.dispatch("getConnectedAccounts");
-    this.$store.dispatch("getReserveLevels", this.selectedType);
+    this.$store.dispatch("getReserveLevels", {clanId: this.$route.params.id, type: this.selectedType});
     this.$store.dispatch("getClanTimezone", this.$route.params.id)
 
-    for (let i=1;i<=24; i++) {
+    for (let i = 1; i<=24; i++) {
       this.times.push({
-        value:i,
+        value: i,
         text: i + ':00'
-      });
+      })
     }
 
     for (let i = -12; i<=12;i++) {
@@ -338,7 +359,8 @@ export default {
       handler: function(search) {
         this.tabs = 0;
         this.$store.dispatch("getClanSchedule", {clanId: this.$route.params.id, day: 0});
-        this.$store.dispatch("getClanTimezone", this.$route.params.id)
+        this.$store.dispatch("getClanTimezone", this.$route.params.id);
+        this.$store.dispatch("getReserveLevels", {clanId: this.$route.params.id, type: this.selectedType});
       },
       deep: true,
       immediate: true

@@ -1,7 +1,15 @@
 <template>
   <v-main>
+
     <v-col class="d-flex justify-center align-center" >
-        <v-form @submit="submitHandler" style="width: 600px" >
+      <v-card style="width: 800px" >
+        <v-card-title>Authorization</v-card-title>
+
+        <v-card-subtitle>With ❤ by WoT-STATS Team</v-card-subtitle>
+
+        <v-card-text>
+
+        <v-form @submit="submitHandler" >
             <v-text-field
                 v-model="email"
                 :rules="emailRules"
@@ -29,7 +37,10 @@
               <span class="white--text px-8">Login</span>
             </v-btn>
           </v-card-actions>
+
         </v-form>
+        </v-card-text>
+      </v-card>
     </v-col>
   </v-main>
 </template>
@@ -56,7 +67,7 @@ export default {
     submitHandler(event){
       event.preventDefault()
 
-      this.$store.dispatch("authorize", {email: this.email, password: this.password});
+      this.$store.dispatch("auth/login", {email: this.email, password: this.password});
     }
   },
 
